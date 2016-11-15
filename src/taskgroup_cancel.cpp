@@ -9,18 +9,28 @@ void f(char c){
 	
 	while(1){
 		cout << c;
+		usleep(1000);
 	}
 }
 
-int timeout(int seconds){
-	sleep(seconds);
-	return seconds;
+int timeout(int ms){
+	cout << "Die.\n";
+	return 1;
+	return 0;
 }
 int main(){
 	int rv;
+	int rv2;
+	if(omp_get_cancellation()){
+		cout << "Cancelation Enabled\n";
+	} 
+	else{
+		cout << "Cancelation Disabled\n";
+	}
 	#pragma omp parallel
 	#pragma omp single
 	#pragma omp taskgroup
+
 	{
 		#pragma omp task
 		f('a');
@@ -28,9 +38,13 @@ int main(){
 		f('b');
 		#pragma omp task
 		f('c');
-		#pragma omp task
+		#pragma omp task\
+			private(rv2)
 		{
-			rv = timeout(1);
+			rv2 = timeout(400);
+			#pragma omp critical
+				rv = rv2;
+				cout << "Rv = " << rv << endl;
 			#pragma omp cancel taskgroup if(rv==1)
 		}
 	}
